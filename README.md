@@ -14,4 +14,4 @@
    RESEND_API_KEY=your_resend_api_key_here
 5. Run the Flask app
    ```bash
-  python app.py
+   python app.py
