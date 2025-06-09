@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QR Attendance</title>
+    <style>
+        #video-container {
+            transition: opacity 0.5s ease;
+        }
+        #status-text {
+            font-size: 1.5rem;
+            margin-top: 20px;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h2>QR Code Attendance System</h2>
+    
+    <div id="video-container">
+        <img id="video-feed" src="{{ url_for('video') }}" width="640" height="480">
+    </div>
+    
+    <h3 id="status-text">Waiting for QR code...</h3>
+
+    <script>
+        const poll = setInterval(() => {
+        fetch('/attendance_status')
+            .then(res => res.json())
+            .then(data => {
+                if (data.data) {
+                    document.getElementById("video-container").style.display = "none";
+                    document.getElementById("status-text").innerText = "Attendance marked ✅: " + data.data;
+                    clearInterval(poll);
+                }
+            });
+    }, 1000);
+    </script>
+</body>
+</html>
