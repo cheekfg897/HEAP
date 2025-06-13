@@ -9,3 +9,5 @@ key = os.environ.get("SUPABASE_KEY")
 
 supabase = create_client(url, key)
 
+data = supabase.table("Attendees").select("*").execute()
+print(data)
