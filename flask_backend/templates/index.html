@@ -23,17 +23,17 @@
     <h3 id="status-text">Waiting for QR code...</h3>
 
     <script>
-        const poll = setInterval(() => {
-        fetch('/attendance_status')
-            .then(res => res.json())
-            .then(data => {
-                if (data.data) {
-                    document.getElementById("video-container").style.display = "none";
-                    document.getElementById("status-text").innerText = "Attendance marked ✅: " + data.data;
-                    clearInterval(poll);
-                }
-            });
-    }, 1000);
+    //     const poll = setInterval(() => {
+    //     fetch('/attendance_status')
+    //         .then(res => res.json())
+    //         .then(data => {
+    //             if (data.data) {
+    //                 document.getElementById("video-container").style.display = "none";
+    //                 document.getElementById("status-text").innerText = "Attendance marked ✅: " + data.data;
+    //                 clearInterval(poll);
+    //             }
+    //         });
+    // }, 1000);
     </script>
 </body>
 </html>

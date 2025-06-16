@@ -4,8 +4,8 @@
     <aside :class="{ 'sidebar-open': isOpen }" class="sidebar">
       <button class="close-btn" @click="toggleSidebar">✖</button>
       <nav>
-        <div class="nav-item"><a href="#">🏠 Dashboard</a></div>
-        <div class="nav-item"><a href="#">📄 Check In</a></div>
+        <div class="nav-item"><a href="/dashboard">🏠 Dashboard</a></div>
+        <div class="nav-item"><a href="/checkin">📄 Check In</a></div>
         <div class="nav-section-title">Features:</div>
         <div class="nav-item"><a href="#">📅 Upcoming Events</a></div>
         <div class="nav-item"><a href="#">📊 Post Event Analytics</a></div>

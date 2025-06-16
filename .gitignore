@@ -5,6 +5,9 @@ __pycache__/
 instance/
 .pytest_cache/
 
+#env file
+.env
+
 # Logs
 logs
 *.log
