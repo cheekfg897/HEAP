@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Accept Invite</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
+  <h2>Accepting your invite...</h2>
+  <script>
+    const SUPABASE_URL = "https://your-project.supabase.co";
+    const SUPABASE_ANON_KEY = "your-anon-key";
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Parse tokens from URL fragment (#access_token=...)
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+
+    if (access_token && refresh_token) {
+      supabase.auth.setSession({
+        access_token: access_token,
+        refresh_token: refresh_token
+      }).then(({ error }) => {
+        if (error) {
+          document.body.innerHTML = "<p>Error logging in: " + error.message + "</p>";
+        } else {
+          // Redirect to dashboard or home page after successful login
+          window.location.href = "/dashboard";
+        }
+      });
+    } else {
+      document.body.innerHTML = "<p>Missing authentication tokens.</p>";
+    }
+  </script>
+</body>
+</html>

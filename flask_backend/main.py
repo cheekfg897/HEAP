@@ -12,10 +12,15 @@ from io import BytesIO
 import base64
 import smtplib
 from email.message import EmailMessage
+from supabase.client import create_client, Client
+import json
 
 load_dotenv()
 EMAIL_APP_PASSWORD = os.getenv("EMAIL_PASSWORD") 
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_ROLE = os.getenv("SUPABASE_SERVICE_ROLE")  # MUST be service role
 
+supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE)
 
 app = Flask(__name__)
 camera = cv2.VideoCapture(0)  # Webcam
@@ -49,6 +54,20 @@ def generate_frames():
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/invite')
+def invite():
+    response = supabase.auth.admin.invite_user_by_email(
+    "enter ur email here",
+    {"redirect_to": "http://localhost:5000/accept-invite"}
+)
+    print(response)
+    return json.dumps({"message": "User invited"})
+
+@app.route('/accept-invite')
+def accept_invite():
+    # Serve an HTML page with JS to handle tokens and call supabase.auth.setSession()
+    return render_template('accept_invite.html')
 
 #generate live feed on frontend
 @app.route('/video')
