@@ -7,7 +7,7 @@
         <div class="nav-item"><a href="/dashboard">🏠 Dashboard</a></div>
         <div class="nav-item"><a href="/checkin">📄 Check In</a></div>
         <div class="nav-section-title">Features:</div>
-        <div class="nav-item"><a href="#">📅 Upcoming Events</a></div>
+        <div class="nav-item"><a href="/upcomingevents">📅 Upcoming Events</a></div>
         <div class="nav-item"><a href="#">📊 Post Event Analytics</a></div>
         <div class="nav-item logout"><a href="#">🚪 Log Out</a></div>
       </nav>
@@ -45,14 +45,14 @@ const toggleSidebar = () => {
   background-color: #2c3e50;
   color: white;
   padding: 2rem 1rem;
-  position: fixed;
-  left: -250px;
-  top: 0;
-  bottom: 0;
-  transition: left 0.3s ease;
-  z-index: 1000;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
 }
 
 .sidebar-open {
@@ -120,10 +120,9 @@ const toggleSidebar = () => {
 
 /* Main content */
 .main-content {
-  margin-left: 0;
-  padding: 1rem;
-  flex-grow: 1;
-  transition: margin-left 0.3s ease;
+  flex: 1;
+  padding: 2rem;
+  box-sizing: border-box;
 }
 
 /* Toggle button (mobile) */
@@ -137,10 +136,6 @@ const toggleSidebar = () => {
 
 /* Desktop layout */
 @media (min-width: 768px) {
-  .main-content {
-    margin-left: 250px;
-  }
-
   .sidebar {
     left: 0;
     position: static;
