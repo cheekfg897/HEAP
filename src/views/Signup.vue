@@ -1,128 +1,162 @@
 <template>
   <div class="page-center">
-  <div class="signup-container">
-    <h2>Create Free Account</h2>
+    <div class="signup-container">
+      <h2>Create Free Account</h2>
 
-    <form @submit.prevent="handleSignup">
-      <div class="form-group">
-        <label for="username">Username</label>
-        <input 
-          type="text" 
-          id="username" 
-          v-model="username" 
-          @input="clearError('username')"
-          placeholder="Choose a username">
-        <div class="error-message" v-if="errors.username">
-          {{ errors.username }}
+      <!-- General error/success message display -->
+      <div v-if="message" :class="['message', messageType]">{{ message }}</div>
+
+      <form @submit.prevent="handleSignup">
+        <!-- Client-side validation errors still work as before -->
+      
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input 
+            type="email" 
+            id="email" 
+            v-model="email" 
+            placeholder="Your email address">
+          <div class="error-message" v-if="errors.email">{{ errors.email }}</div>
         </div>
-      </div>
 
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input 
-          type="email" 
-          id="email" 
-          v-model="email" 
-          @input="clearError('email')"
-          placeholder="Your email address">
-        <div class="error-message" v-if="errors.email">
-          {{ errors.email }}
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input 
+            type="password" 
+            id="password" 
+            v-model="password" 
+            placeholder="Create a password (min. 8 characters)">
+          <div class="error-message" v-if="errors.password">{{ errors.password }}</div>
         </div>
-      </div>
 
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input 
-          type="password" 
-          id="password" 
-          v-model="password" 
-          @input="clearError('password')"
-          placeholder="Create a password">
-        <div class="error-message" v-if="errors.password">
-          {{ errors.password }}
-        </div>
+        <!-- UPDATED: Button is disabled during loading -->
+        <button type="submit" :disabled="loading">
+          {{ loading ? 'Creating...' : 'Create Account' }}
+        </button>
+      </form>
+      
+      <div class="login-link">
+        <p>Already have an account? <router-link to="/">Log In</router-link></p>
       </div>
-
-      <button type="submit">Create Account</button>
-    </form>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth' // 1. Import store
 
+// 2. Instantiate store and router
+const authStore = useAuthStore()
+const router = useRouter()
+
+// --- State for the component ---
 const username = ref('')
 const email = ref('')
 const password = ref('')
-const errors = ref({ username: '', email: '', password: '' })
 
+// For client-side validation errors
+const errors = ref({ username: '', email: '', password: '' })
+// For API loading state and server messages
+const loading = ref(false)
+const message = ref(null) // Can be used for success or error messages from the server
+const messageType = ref('') // 'success' or 'error'
+
+// --- Functions ---
 const validEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
-const clearError = (field) => {
-  errors.value[field] = ''
-}
-
-const handleSignup = () => {
+// 3. UPDATED: handleSignup is now async and uses the store
+const handleSignup = async () => {
+  // --- A. Client-side validation (good practice to keep this) ---
   errors.value = { username: '', email: '', password: '' }
+  message.value = null
   let isValid = true
 
-  if (!username.value) {
-    errors.value.username = 'Username is required'
-    isValid = false
-  } else if (username.value.length < 4) {
+  if (!username.value || username.value.length < 4) {
     errors.value.username = 'Username must be at least 4 characters'
     isValid = false
   }
-
-  if (!email.value) {
-    errors.value.email = 'Email is required'
-    isValid = false
-  } else if (!validEmail(email.value)) {
+  if (!email.value || !validEmail(email.value)) {
     errors.value.email = 'Please enter a valid email'
     isValid = false
   }
-
-  if (!password.value) {
-    errors.value.password = 'Password is required'
-    isValid = false
-  } else if (password.value.length < 8) {
+  if (!password.value || password.value.length < 8) {
     errors.value.password = 'Password must be at least 8 characters'
     isValid = false
   }
+  if (!isValid) return // Stop if client-side validation fails
 
-  if (isValid) {
-    console.log('Signing up:', {
-      username: username.value,
-      email: email.value,
-      password: password.value
+  // --- B. API call to Supabase via Pinia store ---
+  loading.value = true
+  try {
+    // Call the signUp action from the store, passing the username as metadata
+    await authStore.signUp(email.value, password.value, { 
+      username: username.value 
     })
+    
+    // Set a success message
+    messageType.value = 'success'
+    message.value = "Account created successfully! Please check your email to confirm your account before logging in."
+
+    // Redirect to login page after a short delay
     setTimeout(() => {
-      alert('Account created successfully! (This is a demo)')
-    }, 500)
+      router.push({ path: '/' }) // Redirect to login page
+    }, 4000)
+
+  } catch (error) {
+    // Display errors from the server (e.g., "User already registered")
+    messageType.value = 'error'
+    message.value = error.message || 'An unexpected error occurred during signup.'
+  } finally {
+    loading.value = false
   }
 }
 </script>
 
 <style scoped>
-body {
-  font-family: 'Arial', sans-serif;
-  background-color: #f8f9fa;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  margin: 0;
+/* Your excellent styles are kept, with minor additions */
+
+.message {
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-weight: 500;
 }
-.signup-container {
-  background-color: white;
-  padding: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  width: 350px;
-  text-align: center;
+.message.success {
+  background-color: #d4edda;
+  color: #155724;
+}
+.message.error {
+  background-color: #f8d7da;
+  color: #721c24;
 }
 
+.login-link {
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+}
+.login-link a {
+    color: #4285f4;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+button:disabled {
+  background-color: #9ec2f8;
+  cursor: not-allowed;
+}
+
+/* --- Unchanged Styles --- */
+.signup-container {
+  background-color: white;
+  padding: 2rem 2.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
 h2 {
   color: #333;
   margin-bottom: 1.5rem;
@@ -172,11 +206,11 @@ button:hover {
   margin-top: 0.25rem;
 }
 .page-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-color: #f5f5f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding: 1rem;
 }
-
 </style>

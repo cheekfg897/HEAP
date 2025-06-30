@@ -9,7 +9,7 @@
         <div class="nav-section-title">Features:</div>
         <div class="nav-item"><a href="/upcomingevents">📅 Upcoming Events</a></div>
         <div class="nav-item"><a href="/posteventanalytics">📊 Post Event Analytics</a></div>
-        <div class="nav-item logout"><a href="#">🚪 Log Out</a></div>
+        <div class="nav-item logout"  @click="handleLogout"><a href="#">🚪 Log Out</a></div>
       </nav>
     </aside>
 
@@ -26,6 +26,22 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useAuthStore } from '../stores/auth'
+
+// 1. Get an instance of your auth store
+const authStore = useAuthStore()
+
+// 2. Create a handler function to call the store's action
+const handleLogout = async () => {
+  try {
+    // Call the logout action from the store
+    await authStore.logout()
+    // The store's action will handle the redirect, so no more code is needed here.
+  } catch (error) {
+    // A logout error is rare, but you can handle it if needed
+    console.error('Error logging out:', error.message)
+  }
+}
 
 const isOpen = ref(false)
 const toggleSidebar = () => {

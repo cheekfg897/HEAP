@@ -1,33 +1,28 @@
 <template>
-  <!-- Main container for the page -->
   <div class="login-page-container">
-
-    <!-- Left side - Image (now takes up 3/4 of the width) -->
+    <!-- Left side - Image -->
     <div class="image-side">
-      <img
-        src="../assets/Events.svg"
-        alt="University Campus"
-        class="background-image"
-      />
-      <!-- The gradient overlay has been removed -->
+      <img src="../assets/Events.svg" alt="University Campus" class="background-image" />
     </div>
 
-    <!-- Right side - Login Form (now takes up 1/4 of the width) -->
+    <!-- Right side - Login Form -->
     <div class="form-side">
       <div class="login-container">
         <h2>Login</h2>
+
+        <!-- General error message for login failures -->
+        <div v-if="loginError" class="error-message general-error">{{ loginError }}</div>
         
         <form @submit.prevent="handleLogin">
+          <!-- UPDATED: Changed from username to email -->
           <div class="form-group">
-            <label for="username">Username</label>
+            <label for="email">Email</label>
             <input
-              id="username"
-              v-model="username"
-              @input="clearError('username')"
-              type="text"
-              placeholder="Enter your username"
+              id="email"
+              v-model="email"
+              type="email"
+              placeholder="Enter your email"
             />
-            <div class="error-message" v-if="errors.username">{{ errors.username }}</div>
           </div>
 
           <div class="form-group">
@@ -35,21 +30,23 @@
             <input
               id="password"
               v-model="password"
-              @input="clearError('password')"
               type="password"
               placeholder="Enter your password"
             />
-            <div class="error-message" v-if="errors.password">{{ errors.password }}</div>
           </div>
 
           <div class="forgot-password">
             <a href="#" @click.prevent="handleForgotPassword">Forgot Password?</a>
           </div>
 
-          <button type="submit">Login</button>
+          <!-- UPDATED: Button is disabled while loading -->
+          <button type="submit" :disabled="loading">
+            {{ loading ? 'Logging in...' : 'Login' }}
+          </button>
 
           <div class="company-link">
-            <a href="#" @click.prevent="handleCompanyLogin">For a company? [CCA]?</a>
+            <!-- You might want to link this to a signup page -->
+            <router-link to="/signup">Don't have an account? Sign Up</router-link>
           </div>
         </form>
       </div>
@@ -58,45 +55,57 @@
 </template>
 
 <script setup>
-// The script logic remains unchanged
 import { ref } from 'vue'
+import { useAuthStore } from '../stores/auth' // 1. Import your auth store
 
-const username = ref('')
+// 2. Instantiate the store
+const authStore = useAuthStore()
+
+// 3. UPDATED: Use 'email' instead of 'username'
+const email = ref('')
 const password = ref('')
-const errors = ref({ username: '', password: '' })
+const loading = ref(false)
+const loginError = ref(null) // To hold errors from Supabase
 
-const handleLogin = () => {
-  errors.value = { username: '', password: '' }
-  if (!username.value) {
-    errors.value.username = 'Username is required'
-  }
-  if (!password.value) {
-    errors.value.password = 'Password must be required'
-  } else if (password.value.length < 6) {
-    errors.value.password = 'Password must be at least 6 characters'
-  }
-  if (!errors.value.username && !errors.value.password) {
-    alert('Login successful!')
-  }
-}
+// 4. UPDATED: The handleLogin function now uses the store
+const handleLogin = async () => {
+  // Reset previous errors
+  loginError.value = null
+  loading.value = true
 
-const clearError = (field) => {
-  errors.value[field] = ''
+  try {
+    // Call the login action from your Pinia store
+    await authStore.login(email.value, password.value)
+    
+    // The store will handle the redirect on success, so you don't need to do anything here.
+    
+  } catch (error) {
+    // If the store action throws an error, display it
+    loginError.value = error.message || "An unexpected error occurred."
+    
+  } finally {
+    // Ensure loading is set to false even if there's an error
+    loading.value = false
+  }
 }
 
 const handleForgotPassword = () => {
-  alert('Forgot password functionality')
-}
-
-const handleCompanyLogin = () => {
-  const method = prompt('Auth method?')
-  if (method) {
-    alert(`Using ${method}`)
-  }
+  alert('You would implement a password reset flow here, likely using supabase.auth.resetPasswordForEmail()')
 }
 </script>
 
 <style scoped>
+/* Your existing styles are great and don't need to change */
+/* I've added one small style for the general error message */
+.general-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
 /* --- Main Layout Styles --- */
 .login-page-container {
   display: flex;
@@ -105,7 +114,6 @@ const handleCompanyLogin = () => {
 }
 
 .image-side {
-  /* CHANGED: Set width to 3/4 (75%) of the container */
   width: 60%;
 }
 
@@ -115,22 +123,17 @@ const handleCompanyLogin = () => {
   object-fit: cover;
 }
 
-/* REMOVED: The .image-overlay style block is gone */
-
 .form-side {
-  /* CHANGED: Set width to 1/4 (25%) of the container */
   width: 40%;
   display: flex;
   justify-content: center;
   align-items: center;
   background-color: #f5f5f5;
-  /* Add some padding for better spacing on smaller screens */
   padding: 1rem; 
   box-sizing: border-box;
 }
 
-
-/* --- Login Form Specific Styles (Unchanged) --- */
+/* --- Login Form Specific Styles --- */
 .login-container {
     background-color: white;
     padding: 2rem;
@@ -145,8 +148,6 @@ h2 {
     color: #333;
     margin-bottom: 1.5rem;
 }
-
-/* ... all other form styles remain the same ... */
 
 .form-group {
     margin-bottom: 1rem;
@@ -173,9 +174,14 @@ button {
     cursor: pointer;
     font-size: 1rem;
     margin-top: 1rem;
+    transition: background-color 0.2s;
 }
-button:hover {
+button:hover:not(:disabled) {
     background-color: #3367d6;
+}
+button:disabled {
+    background-color: #9ec2f8;
+    cursor: not-allowed;
 }
 .forgot-password {
     text-align: right;
