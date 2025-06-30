@@ -50,7 +50,7 @@
         <tbody>
           <tr v-for="participant in participants" :key="participant.email">
             <td>{{ participant.name }}</td>
-            <td>{{ participant.email }}</td>
+            <td>{{ participant.user_email }}</td>
             <td>{{ participant.status }}</td>
           </tr>
         </tbody>
@@ -130,8 +130,8 @@ async function fetchEvents() {
 // Function to fetch participants for a specific event_id from Supabase
 async function fetchParticipants(eventId) {
   const { data, error } = await supabase
-    .from('participants') // Assuming you have a 'participants' table in Supabase
-    .select('*')          // Or specify columns: .select('name, email, status')
+    .from('Event_attendees') // Assuming you have a 'participants' table in Supabase
+    .select('name, user_email, status')          // Or specify columns: .select('name, email, status')
     .eq('event_id', eventId); // Crucially, filter by the event_id
 
   if (error) {
