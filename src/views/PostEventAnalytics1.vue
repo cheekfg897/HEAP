@@ -1,4 +1,5 @@
 <template>
+  <Sidebar>
   <div style="padding: 20px; font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto;">
     <h1 style="color: #333; margin-bottom: 20px;">📊 Past Events Analytics</h1>
 
@@ -109,10 +110,12 @@
       </div>
     </div>
   </div>
+  </Sidebar>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
+import Sidebar from '../components/Sidebar.vue'
 
 // Reactive data
 const searchQuery = ref('')
