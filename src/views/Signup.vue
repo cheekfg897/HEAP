@@ -52,12 +52,12 @@ const authStore = useAuthStore()
 const router = useRouter()
 
 // --- State for the component ---
-const username = ref('')
+
 const email = ref('')
 const password = ref('')
 
 // For client-side validation errors
-const errors = ref({ username: '', email: '', password: '' })
+const errors = ref({ email: '', password: '' })
 // For API loading state and server messages
 const loading = ref(false)
 const message = ref(null) // Can be used for success or error messages from the server
@@ -69,14 +69,11 @@ const validEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 // 3. UPDATED: handleSignup is now async and uses the store
 const handleSignup = async () => {
   // --- A. Client-side validation (good practice to keep this) ---
-  errors.value = { username: '', email: '', password: '' }
+  errors.value = { email: '', password: '' }
   message.value = null
   let isValid = true
 
-  if (!username.value || username.value.length < 4) {
-    errors.value.username = 'Username must be at least 4 characters'
-    isValid = false
-  }
+
   if (!email.value || !validEmail(email.value)) {
     errors.value.email = 'Please enter a valid email'
     isValid = false
@@ -91,9 +88,7 @@ const handleSignup = async () => {
   loading.value = true
   try {
     // Call the signUp action from the store, passing the username as metadata
-    await authStore.signUp(email.value, password.value, { 
-      username: username.value 
-    })
+    await authStore.signUp(email.value, password.value)
     
     // Set a success message
     messageType.value = 'success'
