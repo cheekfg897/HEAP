@@ -62,32 +62,38 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted} from 'vue'
 import Sidebar from '../components/Sidebar.vue'
-
+import { supabase } from '../supabase.js'
 // To be changed to dynamic data later
 // Sample data for events and participants
-const events = ref([
-  { id: 1, name: 'Hackathon @ SMU', date: '2025-06-14', location: 'SMU School of Computing 1' },
-  { id: 2, name: 'BrainHack', date: '2025-07-07', location: 'MBS Convention Centre' },
-  { id: 3, name: 'HEAP', date: '2025-07-25', location: 'SMU School Of Economics' },
-])
+// const events = ref([
+//   { id: 1, name: 'Hackathon @ SMU', date: '2025-06-14', location: 'SMU School of Computing 1' },
+//   { id: 2, name: 'BrainHack', date: '2025-07-07', location: 'MBS Convention Centre' },
+//   { id: 3, name: 'HEAP', date: '2025-07-25', location: 'SMU School Of Economics' },
+// ])
 
-const eventParticipants = {
-  1: [
-    { name: 'gyaltsen', email: 'gyaltsen@computing.smu', status: 'Registered' },
-    { name: 'kevan', email: 'kevan@computing.smu', status: 'Checked In' },
-  ],
-  2: [
-    { name: 'yan song', email: 'yansong@computing.smu', status: 'Registered' },
-    { name: 'gerald', email: 'gerald@computing.smu', status: 'Registered' },
-    { name: 'nicole', email: 'nicole@computing.smu', status: 'Registered' },
-  ],
-  3: [
-    { name: 'james', email: 'james@computing.smu', status: 'Registered' },
-  ]
-}
+// const eventParticipants = {
+//   1: [
+//     { name: 'gyaltsen', email: 'gyaltsen@computing.smu', status: 'Registered' },
+//     { name: 'kevan', email: 'kevan@computing.smu', status: 'Checked In' },
+//   ],
+//   2: [
+//     { name: 'yan song', email: 'yansong@computing.smu', status: 'Registered' },
+//     { name: 'gerald', email: 'gerald@computing.smu', status: 'Registered' },
+//     { name: 'nicole', email: 'nicole@computing.smu', status: 'Registered' },
+//   ],
+//   3: [
+//     { name: 'james', email: 'james@computing.smu', status: 'Registered' },
+//   ]
+// }
 
+
+// events will be populated from Supabase
+const events = ref([])
+
+// eventParticipants will now store fetched participants dynamically for the selected event
+const eventParticipants = ref({}); // Keep this for clarity, though it's implicitly handled by participants.value
 const selectedEvent = ref(null)
 const participants = ref([])
 
@@ -102,20 +108,74 @@ const filteredEvents = computed(() => {
   )
 })
 
-function selectEvent(event) {
+// src/views/UpcomingEventsPage.vue
+
+// Function to fetch events from Supabase
+async function fetchEvents() {
+  const { data, error } = await supabase
+    .from('Events') // Your table name in Supabase
+    .select('id, name, date, location')     // Select all columns, or specify: .select('id, name, date, location')
+    .order('date', { ascending: true }); // Order by date, adjust as needed
+
+  if (error) {
+    console.error('Error fetching events:', error);
+    // Optionally, handle the error in your UI (e.g., show an error message)
+  } else {
+    events.value = data; // Update the reactive 'events' ref with fetched data
+    // Add a console log here to see what 'data' actually contains!
+    console.log('Fetched events data:', data);
+  }
+}
+
+// Function to fetch participants for a specific event_id from Supabase
+async function fetchParticipants(eventId) {
+  const { data, error } = await supabase
+    .from('participants') // Assuming you have a 'participants' table in Supabase
+    .select('*')          // Or specify columns: .select('name, email, status')
+    .eq('event_id', eventId); // Crucially, filter by the event_id
+
+  if (error) {
+    console.error('Error fetching participants:', error);
+    return []; // Return empty array on error
+  } else {
+    return data; // Return the fetched participants
+  }
+}
+
+// src/views/UpcomingEventsPage.vue
+
+async function selectEvent(event) { // Make this function async
   if (selectedEvent.value && selectedEvent.value.id === event.id) {
     selectedEvent.value = null
     participants.value = []
   } else {
     selectedEvent.value = event
-    participants.value = eventParticipants[event.id] || []
+    // Dynamically fetch participants when an event is selected
+    participants.value = await fetchParticipants(event.id) || []
   }
 }
+
+// function selectEvent(event) {
+//   if (selectedEvent.value && selectedEvent.value.id === event.id) {
+//     selectedEvent.value = null
+//     participants.value = []
+//   } else {
+//     selectedEvent.value = event
+//     participants.value = eventParticipants[event.id] || []
+//   }
+// }
 
 function formatDate(dateStr) {
   const options = { year: 'numeric', month: 'long', day: 'numeric' }
   return new Date(dateStr).toLocaleDateString(undefined, options)
 }
+
+// ... (other functions like formatDate)
+
+// Fetch events from Supabase when the component is mounted
+onMounted(() => {
+  fetchEvents();
+});
 </script>
 
 <style scoped>
