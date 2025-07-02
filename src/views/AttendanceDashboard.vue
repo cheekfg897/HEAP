@@ -1,102 +1,230 @@
 <template>
   <Sidebar>
-  <div class="dashboard">
-    <div class="header">
-      <h1>Today's Event : <span class="date">{{ day }}<sup>{{ daySuffix }}</sup> {{ month }} {{ year }}</span>, {{ eventName }}</h1>
-      <div class="refresh-container">
-        <p>Last Updated {{ updatedTime }}</p>
-        <button class="refresh-btn" @click="refresh">
-          🔄
-        </button>
+    <div class="dashboard">
+      <div class="header">
+        <h1>
+          Today's Event :
+          <span class="date"
+            >{{ day }}<sup>{{ daySuffix }}</sup> {{ month }} {{ year }}</span
+          >,
+          {{ eventName || 'No Event Scheduled Today' }}
+        </h1>
+        <div class="refresh-container">
+          <p>Last Updated {{ updatedTime }}</p>
+          <button class="refresh-btn" @click="refresh">🔄</button>
+        </div>
       </div>
-    </div>
 
-    <h2 class="section-title">Analytics Overview</h2>
+      <h2 class="section-title">Analytics Overview</h2>
 
-    <div class="analytics-cards">
-      <div class="card">
-        <div class="value checked-in">{{ checkedIn }}</div>
-        <div class="label">Checked In</div>
+      <div class="analytics-cards">
+        <div class="card">
+          <div class="value checked-in">{{ checkedIn }}</div>
+          <div class="label">Checked In</div>
+        </div>
+        <div class="card">
+          <div class="value not-checked-in">{{ notCheckedIn }}</div>
+          <div class="label">Not Checked In</div>
+        </div>
+        <div class="card">
+          <div class="value not-attending">{{ notAttending }}</div>
+          <div class="label">Not Attending</div>
+        </div>
       </div>
-      <div class="card">
-        <div class="value not-checked-in">{{ notCheckedIn }}</div>
-        <div class="label">Not Checked In</div>
-      </div>
-      <div class="card">
-        <div class="value not-attending">{{ notAttending }}</div>
-        <div class="label">Not Attending</div>
-      </div>
+      <h2 class="section-title">Have Not Arrived</h2>
+      <table class="not-checked-in-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email Address</th>
+            <th>Reminder</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="notCheckedInList.length === 0">
+            <td colspan="3" style="text-align: center; color: #999;">No participants not checked in.</td>
+          </tr>
+          <tr v-for="person in notCheckedInList" :key="person.id">
+            <td>{{ person.name }}</td>
+            <td>{{ person.email }}</td>
+            <td>
+              <a :href="`mailto:${person.email}`">
+                <button>Email</button>
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <h2 class="section-title">Have Not Arrived</h2>
-<table class="not-checked-in-table">
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Email Address</th>
-      <th>Reminder</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr v-for="(person, index) in notCheckedInList" :key="index">
-      <td>{{ person.name }}</td>
-      <td>{{ person.email }}</td>
-      <td>
-        <a :href="`mailto:${person.email}`">
-          <button>Email</button>
-        </a>
-      </td>
-    </tr>
-  </tbody>
-</table>
-  </div>
   </Sidebar>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import Sidebar from '../components/Sidebar.vue'
+// CHANGED: Import onMounted
+import { ref, onMounted } from 'vue';
+import Sidebar from '../components/Sidebar.vue';
+// ADDED: Supabase client import
+// !!! IMPORTANT: Adjust this path if your supabase.js is NOT in src/lib/
+import { supabase } from '../supabase.js';
 
-// To be changed to dynamic data later
-const checkedIn = ref(79)
-const notCheckedIn = ref(22)
-const notAttending = ref(3)
-const updatedTime = ref('4:16 PM')
+// CHANGED: Initialize refs with default/loading values for dynamic data
+const eventName = ref('Loading Event...');
+const checkedIn = ref(0);
+const notCheckedIn = ref(0);
+const notAttending = ref(0);
+const notCheckedInList = ref([]);
+const updatedTime = ref('...'); // CHANGED: Initialize for loading state
 
-const refresh = () => {
-  updatedTime.value = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
+// CHANGED: Removed hardcoded static data
+// const checkedIn = ref(79)
+// const notCheckedIn = ref(22)
+// const notAttending = ref(3)
+// const notCheckedInList = ref([ /* ... */ ])
+// const eventName = ref('Hackathon @ SMU')
 
+
+// Remaining date formatting helpers are unchanged
 function getDaySuffix(day) {
-  if (day > 3 && day < 21) return 'th'
+  if (day > 3 && day < 21) return 'th';
   switch (day % 10) {
-    case 1: return 'st'
-    case 2: return 'nd'
-    case 3: return 'rd'
-    default: return 'th'
+    case 1:
+      return 'st';
+    case 2:
+      return 'nd';
+    case 3:
+      return 'rd';
+    default:
+      return 'th';
   }
 }
 
-const today = new Date()
-const day = today.getDate()
-const daySuffix = getDaySuffix(day)
-const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-const month = monthNames[today.getMonth()]
-const year = today.getFullYear()
+const today = new Date(); // Current date (2025-07-02 as of your context)
+const day = today.getDate();
+const daySuffix = getDaySuffix(day);
+const monthNames = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+const month = monthNames[today.getMonth()];
+const year = today.getFullYear();
 
-// To be changed to dynamic event name later
-const eventName = ref('Hackathon @ SMU')
+// ADDED: Helper function to format today's date for Supabase query
+function getTodayDateFormatted() {
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`; // Format: YYYY-MM-DD
+}
 
-// To be changed to dynamic data later
-const notCheckedInList = ref([
-  { name: 'gyaltsen', email: 'gyaltsen@computing.smu' },
-  { name: 'kevan', email: 'kevan@computing.smu' },
-  { name: 'yan song', email: 'yansong@computing.smu' },
-  { name: 'gerald', email: 'gerald@computing.smu' },
-  { name: 'nicole', email: 'nicole@computing.smu' }
-])
+// ADDED: Main asynchronous function to fetch all dashboard data
+async function fetchDashboardData() {
+  updatedTime.value = 'Fetching...'; // Set loading state for update time
+
+  const todayFormatted = getTodayDateFormatted();
+  let currentEventId = null;
+
+  // 1. Fetch Today's Event
+  // !!! IMPORTANT: Ensure 'events' is the EXACT case of your table name in Supabase
+  // !!! IMPORTANT: Ensure 'name' and 'date' are the EXACT case of your column names
+  // !!! IMPORTANT: Ensure your 'date' column in Supabase is of type 'date' or 'timestamp without time zone'
+  const { data: eventData, error: eventError } = await supabase
+    .from('Events') // !!! VERIFY: Table name case (e.g., 'events' vs 'Events')
+    .select('id, name') // Select 'id' (for linking participants) and 'name'
+    .eq('date', todayFormatted) // Filter by today's date
+    .maybeSingle(); // Expecting at most one event for today
+
+  if (eventError) {
+    console.error('Error fetching today\'s event:', eventError);
+    eventName.value = 'Error loading event'; // Indicate error to user
+  } else if (eventData) {
+    eventName.value = eventData.name;
+    currentEventId = eventData.id;
+    console.log("Today's Event Data:", eventData); // ADDED: Debugging log
+  } else {
+    // No event found for today
+    eventName.value = 'No Event Scheduled Today';
+    // Reset participant data if no event found
+    checkedIn.value = 0;
+    notCheckedIn.value = 0;
+    notAttending.value = 0;
+    notCheckedInList.value = [];
+    updatedTime.value = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return; // Exit function early as no event means no participants to fetch
+  }
+
+  // 2. Fetch Participants for the current event (only if an event was found)
+  if (currentEventId) {
+    // !!! IMPORTANT: Ensure 'participants' is the EXACT case of your table name in Supabase
+    // !!! IMPORTANT: Ensure 'event_id', 'name', 'email', 'status' are the EXACT case of your column names
+    const { data: participantsData, error: participantsError } = await supabase
+      .from('Event_attendees') // !!! VERIFY: Table name case (e.g., 'participants' vs 'Participants')
+      .select('event_id, name, user_email, status') // Select necessary participant columns including 'id'
+      .eq('event_id', currentEventId); // Filter by the found event's ID
+
+    if (participantsError) {
+      console.error('Error fetching participants:', participantsError);
+      // Reset counts/list on error
+      checkedIn.value = 0;
+      notCheckedIn.value = 0;
+      notAttending.value = 0;
+      notCheckedInList.value = [];
+    } else {
+      // Initialize counts and list
+      let checkedInCount = 0;
+      let notCheckedInCount = 0;
+      let notAttendingCount = 0;
+      const tempNotCheckedInList = [];
+
+      // Loop through participants to categorize them
+      participantsData.forEach((p) => {
+        // !!! IMPORTANT: Adjust these status strings to EXACTLY match your 'status' values in Supabase
+        if (p.status === 'Checked In') { // Example status
+          checkedInCount++;
+        } else if (p.status === 'Registered') { // Example status for those not yet arrived
+          notCheckedInCount++;
+          tempNotCheckedInList.push(p);
+        } else if (p.status === 'Not Attending') { // Example status
+          notAttendingCount++;
+        }
+        // Add more status conditions if you have other categories
+      });
+
+      // Update reactive refs
+      checkedIn.value = checkedInCount;
+      notCheckedIn.value = notCheckedInCount;
+      notAttending.value = notAttendingCount;
+      notCheckedInList.value = tempNotCheckedInList;
+      console.log("Participants Data:", participantsData); // ADDED: Debugging log
+    }
+  }
+
+  // Update last updated time after all fetches are complete
+  updatedTime.value = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+// CHANGED: Refresh function now calls the new data fetching function
+const refresh = () => {
+  fetchDashboardData();
+};
+
+// ADDED: Call fetchDashboardData when the component is mounted
+onMounted(() => {
+  fetchDashboardData();
+});
 </script>
 
 <style scoped>
+/* Your existing styles are unchanged */
 .dashboard {
   font-family: serif;
   padding: 2rem;
@@ -221,6 +349,4 @@ const notCheckedInList = ref([
 .not-checked-in-table button:hover {
   background-color: #1a5fcc;
 }
-
 </style>
-
