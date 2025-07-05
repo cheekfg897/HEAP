@@ -14,6 +14,7 @@ import smtplib
 from email.message import EmailMessage
 from supabase.client import create_client, Client
 import json
+from flask_cors import CORS
 
 load_dotenv()
 EMAIL_APP_PASSWORD = os.getenv("EMAIL_PASSWORD") 
@@ -23,6 +24,7 @@ SUPABASE_SERVICE_ROLE = os.getenv("SUPABASE_SERVICE_ROLE")  # MUST be service ro
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE)
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}})
 camera = cv2.VideoCapture(0)  # Webcam
 detector = cv2.QRCodeDetector()
 qr_data = ""
@@ -80,6 +82,43 @@ def video():
 def get_data():
     return jsonify({"data": qr_data})
 
+@app.route("/send_email_reminder", methods=["POST"])
+
+def send_email_reminder():
+    data = request.get_json()
+    recipient = data.get("recipient")
+    event_name = data.get("eventName")
+
+    subject = f"Reminder: Upcoming Event - {event_name}"
+    message_body = f"""Hello,
+
+This is a friendly reminder about the upcoming event: **{event_name}**.
+
+Make sure to check your schedule and prepare accordingly. We’re excited to see you there!
+
+Best regards,  
+Your Community Team"""
+
+    try:
+        email_address = "collectivedeeptech@gmail.com"
+        email_password = EMAIL_APP_PASSWORD
+
+        msg = EmailMessage()
+        msg['Subject'] = subject
+        msg['From'] = email_address
+        msg['To'] = "kevansoon@gmail.com"
+        msg.set_content(message_body)
+
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(email_address, email_password)
+            smtp.send_message(msg)
+
+        return jsonify({"status": "success", "message": "Email reminder sent!"})
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route("/send_email_python")
 def send_email_python():
     # Step 0: Generate the QR code
@@ -135,7 +174,7 @@ def send_email_python():
     # Step 3: Create email
     msg = EmailMessage()
     msg['Subject'] = "Your Digital QR Code Pass"
-    msg['From'] = "kevansoon@gmail.com"
+    msg['From'] = "collectivedeeptech@gmail.com"
     msg['To'] = "kevan.soon.2024@smu.edu.sg"
     msg.set_content("Here is your QR code attached as an image!")
 

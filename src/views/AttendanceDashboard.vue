@@ -46,11 +46,11 @@
           </tr>
           <tr v-for="person in notCheckedInList" :key="person.id">
             <td>{{ person.name }}</td>
-            <td>{{ person.email }}</td>
+            <td>{{ person.user_email }}</td>
             <td>
-              <a :href="`mailto:${person.email}`">
-                <button>Email</button>
-              </a>
+              <!-- <a :href="`mailto:${person.user_email}`"> -->
+                <button @click="sendEmail(person.user_email)">Email</button>
+              <!-- </a> -->
             </td>
           </tr>
         </tbody>
@@ -58,6 +58,38 @@
     </div>
   </Sidebar>
 </template>
+<script>
+export default {
+  props: ['person', 'event'],
+  methods: {
+    async sendEmail(email, eventName) {
+      try {
+        const response = await fetch('http://localhost:5000/send_email_reminder', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            recipient: email,
+            eventName: eventName
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert('Email sent: ' + data.message);
+        } else {
+          alert('Failed to send email: ' + data.message);
+        }
+      } catch (error) {
+        alert('Request error occurred');
+        console.error(error);
+      }
+    }
+  }
+};
+</script>
 
 <script setup>
 // CHANGED: Import onMounted
@@ -81,7 +113,6 @@ const updatedTime = ref('...'); // CHANGED: Initialize for loading state
 // const notAttending = ref(3)
 // const notCheckedInList = ref([ /* ... */ ])
 // const eventName = ref('Hackathon @ SMU')
-
 
 // Remaining date formatting helpers are unchanged
 function getDaySuffix(day) {
@@ -118,6 +149,8 @@ const monthNames = [
 const month = monthNames[today.getMonth()];
 const year = today.getFullYear();
 
+
+
 // ADDED: Helper function to format today's date for Supabase query
 function getTodayDateFormatted() {
   const year = today.getFullYear();
@@ -131,6 +164,7 @@ async function fetchDashboardData() {
   updatedTime.value = 'Fetching...'; // Set loading state for update time
 
   const todayFormatted = getTodayDateFormatted();
+
   let currentEventId = null;
 
   // 1. Fetch Today's Event
@@ -140,7 +174,7 @@ async function fetchDashboardData() {
   const { data: eventData, error: eventError } = await supabase
     .from('Events') // !!! VERIFY: Table name case (e.g., 'events' vs 'Events')
     .select('id, name') // Select 'id' (for linking participants) and 'name'
-    .eq('date', todayFormatted) // Filter by today's date
+    .eq('date', '2025-07-02') // Filter by today's date
     .maybeSingle(); // Expecting at most one event for today
 
   if (eventError) {
@@ -170,6 +204,8 @@ async function fetchDashboardData() {
       .from('Event_attendees') // !!! VERIFY: Table name case (e.g., 'participants' vs 'Participants')
       .select('event_id, name, user_email, status') // Select necessary participant columns including 'id'
       .eq('event_id', currentEventId); // Filter by the found event's ID
+
+    console.log(participantsData)
 
     if (participantsError) {
       console.error('Error fetching participants:', participantsError);
