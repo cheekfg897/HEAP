@@ -6,6 +6,8 @@ import SignUp from './views/Signup.vue'
 import CheckIn from './views/CheckIn.vue'
 import UpcomingEvents from './views/UpcomingEvents.vue'
 import PostEventAnalytics1 from './views/PostEventAnalytics1.vue'
+import AdminDashboard from './views/AdminDashboard.vue'
+import AddEvent from './views/AddEvent.vue'
 
 const routes = [
   // --- Public Routes ---
@@ -49,6 +51,22 @@ const routes = [
     path: '/posteventanalytics',
     name: 'posteventanalytics',
     component: PostEventAnalytics1,
+    meta: {
+      requiresAuth: true // Mark this route as requiring authentication
+    }
+  },
+  {
+    path: '/admindashboard',
+    name: 'admindashboard',
+    component: AdminDashboard,
+    meta: {
+      requiresAuth: true // Mark this route as requiring authentication
+    }
+  },
+  {
+    path: '/addevent',
+    name: 'addevent',
+    component: AddEvent,
     meta: {
       requiresAuth: true // Mark this route as requiring authentication
     }
