@@ -48,9 +48,9 @@
             <td>{{ person.name }}</td>
             <td>{{ person.user_email }}</td>
             <td>
-              <!-- <a :href="`mailto:${person.user_email}`"> -->
-                <button @click="sendEmail(person.user_email)">Email</button>
-              <!-- </a> -->
+            <button @click="sendEmail(person.user_email, eventName)">
+              Email
+            </button>
             </td>
           </tr>
         </tbody>
@@ -59,36 +59,31 @@
   </Sidebar>
 </template>
 <script>
-export default {
-  props: ['person', 'event'],
-  methods: {
-    async sendEmail(email, eventName) {
-      try {
-        const response = await fetch('http://localhost:5000/send_email_reminder', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            recipient: email,
-            eventName: eventName
-          })
-        });
+async function sendEmail(email, eventTitle) {
+  try {
+    const response = await fetch('http://localhost:5000/send_email_reminder', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        recipient: email,
+        eventName: eventTitle
+      })
+    });
 
-        const data = await response.json();
+    const data = await response.json();
 
-        if (response.ok) {
-          alert('Email sent: ' + data.message);
-        } else {
-          alert('Failed to send email: ' + data.message);
-        }
-      } catch (error) {
-        alert('Request error occurred');
-        console.error(error);
-      }
+    if (response.ok) {
+      alert('✅ Email sent: ' + data.message);
+    } else {
+      alert('❌ Failed to send email: ' + data.message);
     }
+  } catch (error) {
+    alert('❌ Request error occurred');
+    console.error(error);
   }
-};
+}
 </script>
 
 <script setup>

@@ -177,7 +177,7 @@ Your Community Team"""
         msg = EmailMessage()
         msg['Subject'] = subject
         msg['From'] = email_address
-        msg['To'] = "kevansoon@gmail.com"
+        msg['To'] =  recipient
         msg.set_content(message_body)
 
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
