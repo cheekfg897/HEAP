@@ -8,6 +8,7 @@ import UpcomingEvents from './views/UpcomingEvents.vue'
 import PostEventAnalytics1 from './views/PostEventAnalytics1.vue'
 import AdminDashboard from './views/AdminDashboard.vue'
 import AddEvent from './views/AddEvent.vue'
+import SendEmail from './views/SendEmail.vue'
 
 const routes = [
   // --- Public Routes ---
@@ -20,6 +21,11 @@ const routes = [
     path: '/signup',
     name: 'signup',
     component: SignUp
+  },
+   {
+    path: '/sendemail',
+    name: 'sendemail',
+    component: SendEmail
   },
 
   // --- Protected Routes ---

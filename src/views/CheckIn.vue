@@ -27,7 +27,7 @@ onMounted(() => {
       .then(res => res.json())
       .then(data => {
         if (data.data) {
-          videoVisible.value = false
+          // videoVisible.value = false
           statusText.value = "Attendance marked ✅: " + data.data
           clearInterval(poll)
         }
