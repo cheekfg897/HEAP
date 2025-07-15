@@ -111,10 +111,14 @@ const filteredEvents = computed(() => {
 // src/views/UpcomingEventsPage.vue
 
 // Function to fetch events from Supabase
+// src/views/UpcomingEventsPage.vue
+
+// Function to fetch events from Supabase
 async function fetchEvents() {
   const { data, error } = await supabase
     .from('Events') // Your table name in Supabase
-    .select('id, name, date, location')     // Select all columns, or specify: .select('id, name, date, location')
+    .select('id, name, date, location') // Select all columns, or specify: .select('id, name, date, location')
+    .gt('date', new Date().toISOString().slice(0, 10)) // <--- ADD THIS LINE
     .order('date', { ascending: true }); // Order by date, adjust as needed
 
   if (error) {

@@ -22,7 +22,7 @@ load_dotenv()
 EMAIL_APP_PASSWORD = os.getenv("EMAIL_PASSWORD") 
 
 # Get Supabase URL and Service Role Key from the environment
-SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_URL = os.getenv("VITE_SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 # Check if the environment variables are loaded correctly
