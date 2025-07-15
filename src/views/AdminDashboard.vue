@@ -66,7 +66,7 @@ const fetchAdminCcas = async () => {
 // Navigate to Add Event page
 const goToAddEvent = (cca) => {
   router.push({
-    name: 'AddEvent',
+    name: 'addevent',
     query: {
       org_id: cca.id,
       org_name: cca.Organisation_name,
