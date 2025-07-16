@@ -26,19 +26,6 @@
           <div class="error-message" v-if="errors.password">{{ errors.password }}</div>
         </div>
 
-        <div class="form-group">
-          <label for="ccas">Select Your CCA(s)</label>
-          <Multiselect
-            v-model="selectedCcas"
-            :options="organisations"
-            :multiple="true"
-            :close-on-select="false"
-            label="Organisation_name"
-            track-by="id"
-            placeholder="Choose one or more CCAs"
-          />
-        </div>
-
         <button type="submit" :disabled="loading">
           {{ loading ? 'Creating...' : 'Create Account' }}
         </button>
@@ -56,8 +43,6 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { supabase } from '../supabase'
-import Multiselect from 'vue-multiselect'
-import 'vue-multiselect/dist/vue-multiselect.min.css'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -137,8 +122,6 @@ const handleSignup = async () => {
 </script>
 
 <style scoped>
-@import 'vue-multiselect/dist/vue-multiselect.min.css';
-
 .page-center {
   display: flex;
   justify-content: center;
