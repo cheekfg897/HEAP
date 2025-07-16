@@ -5,7 +5,7 @@
       <button class="close-btn" @click="toggleSidebar">✖</button>
       <nav>
         <div class="nav-item"><a href="/dashboard">🏠 Dashboard</a></div>
-        <div class="nav-item"><a href="/admindashboard">💻 Admin Page</a></div>
+        <div class="nav-item"><a href="/addevent">💻 Add Event</a></div>
         <div class="nav-item"><a href="/checkin">📄 Check In</a></div>
         <div class="nav-section-title">Features:</div>
         <div class="nav-item"><a href="/upcomingevents">📅 Upcoming Events</a></div>
