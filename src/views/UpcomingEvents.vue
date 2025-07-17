@@ -39,7 +39,7 @@
         </tbody>
       </table>
 
-      <!-- Message/Notification Box -->
+      <!-- Message/Notification Box (for general page messages, not pop-up) -->
       <div v-if="message" :class="['message-box', messageType]">
         {{ message }}
       </div>
@@ -82,6 +82,7 @@
               <td>{{ participant.user_email }}</td>
               <td>{{ participant.status }}</td>
               <td>
+                <button @click="resendQrEmail(participant)" class="resend-email-button">Resend QR</button>
                 <button @click="showDeleteConfirm(participant)" class="delete-button">Delete</button>
               </td>
             </tr>
@@ -98,6 +99,17 @@
           <div class="modal-actions">
             <button @click="deleteParticipantConfirmed" class="confirm-delete-button">Yes, Delete</button>
             <button @click="cancelDelete" class="cancel-button">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- QR Send Status Modal -->
+      <div v-if="showStatusModal" class="modal-overlay" @click="closeStatusModal">
+        <div :class="['modal-content', statusModalType]" @click.stop>
+          <h3>{{ statusModalTitle }}</h3>
+          <p>{{ statusModalMessage }}</p>
+          <div class="modal-actions">
+            <button @click="closeStatusModal" class="cancel-button">OK</button>
           </div>
         </div>
       </div>
@@ -120,14 +132,18 @@ const searchTerm = ref('')
 // Reactive variables for new participant form
 const newParticipantName = ref('')
 const newParticipantEmail = ref('')
-// newParticipantStatus is no longer directly set by user, backend will set to 'Registered'
-// const newParticipantStatus = ref('Registered') // Default to 'Registered'
 
 // Reactive variables for messages and confirmation modal
 const message = ref('')
 const messageType = ref('') // 'success' or 'error'
 const showConfirmModal = ref(false)
 const participantToDelete = ref(null)
+
+// Reactive variables for QR Send Status Modal
+const showStatusModal = ref(false)
+const statusModalTitle = ref('')
+const statusModalMessage = ref('')
+const statusModalType = ref('') // 'success', 'error', 'info'
 
 // Computed property for filtering events based on search term
 const filteredEvents = computed(() => {
@@ -238,7 +254,7 @@ async function addParticipant() {
     const result = await response.json();
 
     if (response.ok) {
-      showMessage(`Participant added and QR email sent: ${result.message}`, 'success');
+      showStatusPopup('QR Sent Successfully!', `QR code email sent to ${newParticipantEmail.value}.`, 'success');
       // Clear form fields
       newParticipantName.value = '';
       newParticipantEmail.value = '';
@@ -247,14 +263,57 @@ async function addParticipant() {
       // Also refresh events to update participant count
       await fetchEvents();
     } else {
-      showMessage(`Error adding participant: ${result.message}`, 'error');
+      showStatusPopup('Failed to Send QR', `Error sending QR code email to ${newParticipantEmail.value}: ${result.message}`, 'error');
       console.error('Backend error:', result.message);
     }
   } catch (e) {
     console.error('Network or unexpected error calling backend:', e);
-    showMessage(`Failed to connect to backend or unexpected error: ${e.message}`, 'error');
+    showStatusPopup('Connection Error', `Failed to connect to backend or unexpected error: ${e.message}`, 'error');
   }
 }
+
+// Function to resend QR code email to an existing participant
+async function resendQrEmail(participant) {
+  if (!selectedEvent.value) {
+    showMessage('No event selected.', 'error');
+    return;
+  }
+  if (!participant || !participant.user_email) {
+    showMessage('Invalid participant selected for email resend.', 'error');
+    return;
+  }
+
+  showStatusPopup('Resending QR...', `Attempting to resend QR to ${participant.user_email}...`, 'info');
+
+  try {
+    const response = await fetch('http://localhost:5000/send_email_python', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        attendeeName: participant.name,
+        attendeeEmail: participant.user_email,
+        eventName: selectedEvent.value.name,
+        eventDate: selectedEvent.value.date,
+        eventLocation: selectedEvent.value.location,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      showStatusPopup('QR Resent Successfully!', `QR code email resent to ${participant.user_email}.`, 'success');
+    } else {
+      showStatusPopup('Failed to Resend QR', `Error resending QR email to ${participant.user_email}: ${result.message}`, 'error');
+      console.error('Backend error during resend:', result.message);
+    }
+  } catch (e) {
+    console.error('Network or unexpected error calling backend for resend:', e);
+    showStatusPopup('Connection Error', `Failed to connect to backend or unexpected error during resend: ${e.message}`, 'error');
+  }
+}
+
 
 // Function to show the delete confirmation modal
 function showDeleteConfirm(participant) {
@@ -295,7 +354,7 @@ function cancelDelete() {
   participantToDelete.value = null;
 }
 
-// Function to display messages
+// Function to display general page messages (not pop-up)
 function showMessage(msg, type) {
   message.value = msg;
   messageType.value = type;
@@ -304,11 +363,34 @@ function showMessage(msg, type) {
   }, 5000); // Message disappears after 5 seconds
 }
 
-// Function to clear messages
+// Function to clear general page messages
 function clearMessage() {
   message.value = '';
   messageType.value = '';
 }
+
+// Function to show the QR Send Status Pop-up
+function showStatusPopup(title, msg, type) {
+  statusModalTitle.value = title;
+  statusModalMessage.value = msg;
+  statusModalType.value = type;
+  showStatusModal.value = true;
+  // Automatically close after 3 seconds for success/info, keep error open until user clicks OK
+  if (type === 'success' || type === 'info') {
+    setTimeout(() => {
+      closeStatusModal();
+    }, 3000);
+  }
+}
+
+// Function to close the QR Send Status Pop-up
+function closeStatusModal() {
+  showStatusModal.value = false;
+  statusModalTitle.value = '';
+  statusModalMessage.value = '';
+  statusModalType.value = '';
+}
+
 
 // Fetch events from Supabase when the component is mounted
 onMounted(() => {
@@ -443,7 +525,7 @@ h3 {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
 }
 
-.add-button, .delete-button, .confirm-delete-button, .cancel-button {
+.add-button, .delete-button, .confirm-delete-button, .cancel-button, .resend-email-button {
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 8px;
@@ -472,6 +554,7 @@ h3 {
   color: white;
   padding: 0.5rem 1rem; /* Smaller padding for table button */
   font-size: 0.9rem;
+  margin-left: 0.5rem; /* Space between resend and delete */
 }
 
 .delete-button:hover {
@@ -479,6 +562,20 @@ h3 {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
+
+.resend-email-button {
+  background-color: #007bff; /* Blue */
+  color: white;
+  padding: 0.5rem 1rem; /* Smaller padding for table button */
+  font-size: 0.9rem;
+}
+
+.resend-email-button:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
 
 /* Message Box Styling */
 .message-box {
@@ -502,6 +599,12 @@ h3 {
   color: #721c24;
   border: 1px solid #f5c6cb;
 }
+.message-box.info { /* Added style for info messages */
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
 
 /* Modal Styling */
 .modal-overlay {
@@ -603,7 +706,7 @@ h3 {
     font-size: 0.9rem;
   }
 
-  .add-button, .delete-button, .confirm-delete-button, .cancel-button {
+  .add-button, .delete-button, .confirm-delete-button, .cancel-button, .resend-email-button {
     padding: 0.6rem 1.2rem;
     font-size: 0.9rem;
   }
