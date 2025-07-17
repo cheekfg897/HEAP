@@ -115,7 +115,7 @@ const submitEvent = async () => {
   } else {
     message.value = '✅ Event created successfully!';
     messageType.value = 'success';
-    setTimeout(() => router.push('/admin-dashboard'), 2000);
+    setTimeout(() => router.push('/dashboard'), 2000);
   }
 
   submitting.value = false;
