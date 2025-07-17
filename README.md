@@ -73,3 +73,13 @@ Finally, run the Flask application:
 python main.py
 ```
 This will start the Flask server, usually on http://127.0.0.1:5000 (or another port if configured differently in main.py). Your backend API will then be accessible.
+
+Environment Variables Setup ⚙️
+To ensure your project can properly connect to Supabase and send emails, you must configure the following environment variables. Create a file named .env in the root directory of your project (for frontend variables) and/or in your flask_backend directory (for backend variables, depending on where they're used) and add the following lines:
+
+```bash
+VITE_SUPABASE_URL="YOUR_SUPABASE_URL"
+VITE_SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY"
+SUPABASE_SERVICE_ROLE_KEY="YOUR_SUPABASE_SERVICE_ROLE_KEY"
+EMAIL_PASSWORD="YOUR_EMAIL_PASSWORD"
+```
