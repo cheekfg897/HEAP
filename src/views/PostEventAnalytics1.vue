@@ -33,9 +33,6 @@
         <button @click="saveCSV" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; background: #f8f9fa; display: flex; align-items: center; gap: 5px;">
           💾 Save CSV
         </button>
-        <button @click="toggleFilter" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; background: #f8f9fa; display: flex; align-items: center; gap: 5px;">
-          🔽 Filter
-        </button>
         <button @click="showAll" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; background: #f8f9fa; display: flex; align-items: center; gap: 5px;">
           👁️ Show All
         </button>
