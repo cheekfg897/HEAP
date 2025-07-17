@@ -198,8 +198,10 @@ def send_email_python():
     event_name = data.get("eventName")
     event_date = data.get("eventDate")
     event_location = data.get("eventLocation")
+    # --- START OF CHANGE ---
+    event_id = data.get("eventId") # <--- ADD THIS LINE: Get the numerical event ID from the frontend
 
-    if not all([attendee_name, attendee_email, event_name, event_date, event_location]):
+    if not all([attendee_name, attendee_email, event_name, event_date, event_location, event_id]): # <--- MODIFY THIS LINE: Add event_id to the check
         return jsonify({"status": "error", "message": "Missing required data for QR ticket generation."}), 400
 
     try:
@@ -207,7 +209,7 @@ def send_email_python():
         existing_registration_response = supabase.table('Event_attendees') \
             .select('user_email, qr_code_value') \
             .eq('user_email', attendee_email) \
-            .eq('event_id', event_name) \
+            .eq('event_id', event_id) \
             .limit(1) \
             .execute()
 
@@ -218,22 +220,22 @@ def send_email_python():
             if existing_qr_value:
                 qr_value_to_encode = existing_qr_value
             else:
-                qr_value_to_encode = str(uuid.uuid4())  # Generate new QR if none exists
+                qr_value_to_encode = str(uuid.uuid4())   # Generate new QR if none exists
                 # Update the record with the new QR code
                 update_response = supabase.table('Event_attendees') \
                     .update({'qr_code_value': qr_value_to_encode}) \
                     .eq('user_email', attendee_email) \
-                    .eq('event_id', event_name) \
+                    .eq('event_id', event_id) \
                     .execute()
 
                 if not update_response.data:
                     return jsonify({"status": "error", "message": "Failed to update existing registration with QR code."}), 500
         else:
             # If no record exists, create a new registration with user_email
-            qr_value_to_encode = str(uuid.uuid4())  # Generate new QR code
+            qr_value_to_encode = str(uuid.uuid4())   # Generate new QR code
             insert_response = supabase.table('Event_attendees').insert({
                 "user_email": attendee_email,
-                "event_id": event_name,  # Assuming event_name can be used as an event identifier
+                "event_id": event_id,   # <--- MODIFY THIS LINE: Use event_id here
                 "qr_code_value": qr_value_to_encode,
                 "name": attendee_name,
                 "status": 'Registered'
@@ -241,6 +243,7 @@ def send_email_python():
 
             if not insert_response.data:
                 return jsonify({"status": "error", "message": "Failed to register attendee for event."}), 500
+    # --- END OF CHANGE ---
 
         # Step 2: Generate the QR code image
         qr_img = qrcode.make(qr_value_to_encode)
