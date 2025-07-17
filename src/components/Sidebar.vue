@@ -9,7 +9,7 @@
         <div class="nav-item"><a href="/checkin">📄 Check In</a></div>
         <div class="nav-section-title">Features:</div>
         <div class="nav-item"><a href="/upcomingevents">📅 Upcoming Events</a></div>
-        <div class="nav-item"><a href="/posteventanalytics">📊 Post Event Analytics</a></div>
+        <div class="nav-item"><a href="/posteventanalytics">📊 Past Event Analytics</a></div>
         <div class="nav-item logout"  @click="handleLogout"><a href="#">🚪 Log Out</a></div>
       </nav>
     </aside>
