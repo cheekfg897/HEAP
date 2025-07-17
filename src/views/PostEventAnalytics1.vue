@@ -3,6 +3,15 @@
     <div style="padding: 20px; font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto;">
       <h1 style="color: #333; margin-bottom: 20px;">📊 Past Events Analytics</h1>
 
+      <!-- Loading Indicator -->
+      <div v-if="isLoading" style="text-align: center; padding: 20px; color: #007bff;">
+        Loading analytics data...
+      </div>
+      <div v-if="error" style="text-align: center; padding: 20px; color: #dc3545;">
+        Error: {{ error }}
+      </div>
+
+      <!-- Search Section -->
       <div style="margin: 1rem 0; display: flex; gap: 5px; align-items: center;">
         <input
           type="text"
@@ -19,6 +28,7 @@
         </button>
       </div>
 
+      <!-- Action Buttons -->
       <div style="margin: 1rem 0; display: flex; gap: 10px; flex-wrap: wrap;">
         <button @click="saveCSV" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; background: #f8f9fa; display: flex; align-items: center; gap: 5px;">
           💾 Save CSV
@@ -31,6 +41,7 @@
         </button>
       </div>
 
+      <!-- Data Table -->
       <div style="overflow-x: auto; border: 1px solid #ddd; border-radius: 4px;">
         <table style="width: 100%; border-collapse: collapse; background: white;">
           <thead>
@@ -45,6 +56,8 @@
               </th>
               <th style="padding: 12px; border-bottom: 2px solid #ddd; text-align: left;">Event Name</th>
               <th style="padding: 12px; border-bottom: 2px solid #ddd; text-align: left;">Date</th>
+              <th style="padding: 12px; border-bottom: 2px solid #ddd; text-align: left;">Attendees</th>
+              <th style="padding: 12px; border-bottom: 2px solid #ddd; text-align: left;">Engagement</th>
               <th style="padding: 12px; border-bottom: 2px solid #ddd; text-align: left;">Analytics</th>
             </tr>
           </thead>
@@ -60,14 +73,16 @@
               </td>
               <td style="padding: 12px; font-weight: 500;">{{ event.name }}</td>
               <td style="padding: 12px; color: #666;">{{ event.date }}</td>
+              <td style="padding: 12px; color: #666;">{{ event.attendees || 'N/A' }}</td>
+              <td style="padding: 12px; color: #666;">{{ event.engagement || 'N/A' }}</td>
               <td style="padding: 12px;">
                 <a href="#" @click.prevent="viewAnalytics(event)" style="color: #007bff; text-decoration: none; font-weight: 500;">
                   View Here
                 </a>
               </td>
             </tr>
-            <tr v-if="filteredEvents.length === 0">
-              <td colspan="4" style="text-align: center; color: #666; padding: 40px; font-style: italic;">
+            <tr v-if="filteredEvents.length === 0 && !isLoading">
+              <td colspan="6" style="text-align: center; color: #666; padding: 40px; font-style: italic;">
                 No events found matching your search
               </td>
             </tr>
@@ -75,6 +90,7 @@
         </table>
       </div>
 
+      <!-- Records Counter -->
       <p style="margin-top: 15px; color: #666; font-size: 14px;">
         Records {{ startRecord }} to {{ endRecord }} of {{ totalRecords }}
         <span v-if="selectedEvents.length > 0" style="margin-left: 20px; color: #007bff;">
@@ -82,6 +98,7 @@
         </span>
       </p>
 
+      <!-- Analytics Modal -->
       <div v-if="showAnalyticsModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;" @click="closeAnalytics">
         <div @click.stop style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
           <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px;">📈 Analytics for {{ selectedEvent?.name }}</h3>
@@ -106,9 +123,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Sidebar from '../components/Sidebar.vue'
-import { createClient } from '@supabase/supabase-js' // Import createClient
+import { createClient } from '@supabase/supabase-js'
 
 // Initialize Supabase using environment variables
 // IMPORTANT: Ensure your .env file has VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
@@ -124,17 +141,81 @@ const searchQuery = ref('')
 const selectedEvents = ref([])
 const showAnalyticsModal = ref(false)
 const selectedEvent = ref(null)
+const events = ref([]) // Initialize as empty, data will be fetched
+const isLoading = ref(true) // Loading state
+const error = ref(null) // Error state
 
-// Sample events data
-// TODO: Replace this with data fetched from Supabase once the connection is verified.
-const events = ref([
-  { id: 1, name: 'SMU Flag Off', date: '2024-06-01', attendees: 150, engagement: '85%' },
-  { id: 2, name: 'Annual Conference 2024', date: '2024-05-15', attendees: 300, engagement: '92%' },
-  { id: 3, name: 'Tech Workshop Series', date: '2024-04-20', attendees: 75, engagement: '78%' },
-  { id: 4, name: 'Student Orientation', date: '2024-03-10', attendees: 200, engagement: '88%' },
-  { id: 5, name: 'Career Fair 2024', date: '2024-02-28', attendees: 450, engagement: '94%' },
-  { id: 6, name: 'Alumni Networking Night', date: '2024-01-15', attendees: 120, engagement: '82%' }
-])
+// Function to fetch and process event analytics
+const fetchEventsAnalytics = async () => {
+  isLoading.value = true;
+  error.value = null;
+  try {
+    // Get current date in YYYY-MM-DD format for comparison
+    const currentDate = new Date().toISOString().split('T')[0];
+
+    // 1. Fetch past events from the 'Events' table
+    const { data: eventsData, error: eventsError } = await supabase
+      .from('Events') // Replace with your actual Events table name
+      .select('id, name, date')
+      .lt('date', currentDate); // Filter for events whose date is in the past
+
+    if (eventsError) {
+      throw new Error(`Error fetching events: ${eventsError.message}`);
+    }
+
+    const processedEvents = [];
+
+    // 2. For each past event, fetch attendee data and calculate analytics
+    for (const event of eventsData) {
+      const { data: attendeesData, error: attendeesError } = await supabase
+        .from('Event_attendees') // Replace with your actual Event_attendees table name
+        .select('status') // Select the 'status' column
+        .eq('event_id', event.id); // Filter by the current event's ID
+
+      if (attendeesError) {
+        console.error(`Error fetching attendees for event ${event.id}: ${attendeesError.message}`);
+        // Continue to next event even if there's an error for this one
+        processedEvents.push({
+          id: event.id,
+          name: event.name,
+          date: event.date,
+          attendees: 'N/A',
+          engagement: 'N/A',
+        });
+        continue;
+      }
+
+      const totalAttendees = attendeesData.length;
+      // Count how many attendees have a 'status' of "Checked In"
+      const checkedIns = attendeesData.filter(attendee => attendee.status === 'Checked In').length;
+
+      let engagementPercentage = 'N/A';
+      if (totalAttendees > 0) {
+        engagementPercentage = ((checkedIns / totalAttendees) * 100).toFixed(2) + '%';
+      }
+
+      processedEvents.push({
+        id: event.id,
+        name: event.name,
+        date: event.date,
+        attendees: checkedIns, // Number of checked-in attendees
+        engagement: engagementPercentage,
+      });
+    }
+
+    events.value = processedEvents;
+  } catch (err) {
+    console.error('An unexpected error occurred during data fetch:', err);
+    error.value = err.message;
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Fetch data when the component is mounted
+onMounted(() => {
+  fetchEventsAnalytics();
+});
 
 // Computed properties
 const filteredEvents = computed(() => {
@@ -157,14 +238,14 @@ const endRecord = computed(() => totalRecords.value)
 // Methods
 const handleSearch = () => {
   console.log('Searching for:', searchQuery.value)
-  // In a real application, you'd trigger a data fetch from Supabase here
-  // based on the search query.
+  // The computed property `filteredEvents` will automatically react to searchQuery changes.
+  // No explicit re-fetch from Supabase is needed here unless you want server-side searching.
 }
 
 const clearSearch = () => {
   searchQuery.value = ''
   selectedEvents.value = []
-  // In a real application, you might re-fetch all data from Supabase here.
+  // The computed property `filteredEvents` will automatically react.
 }
 
 const selectAll = (event) => {
@@ -194,15 +275,15 @@ const saveCSV = () => {
 }
 
 const toggleFilter = () => {
+  // Use a custom modal or UI element instead of `alert()` for better user experience.
+  // For now, keeping the alert as per original code.
   alert('Filter functionality can be expanded here!')
-  // This is where you would implement more advanced filtering,
-  // potentially interacting with Supabase to filter data.
 }
 
 const showAll = () => {
   searchQuery.value = ''
   selectedEvents.value = []
-  // If data is fetched from Supabase, this would trigger a re-fetch without filters.
+  // This will reset the search filter, and the computed `filteredEvents` will show all.
 }
 
 const viewAnalytics = (event) => {
@@ -214,32 +295,13 @@ const closeAnalytics = () => {
   showAnalyticsModal.value = false
   selectedEvent.value = null
 }
-
-// You can now use the 'supabase' client to interact with your Supabase database.
-// For example, to fetch data when the component is mounted:
-/*
-import { onMounted } from 'vue'
-
-onMounted(async () => {
-  try {
-    const { data, error } = await supabase
-      .from('your_events_table_name') // Replace with your actual table name
-      .select('*')
-
-    if (error) {
-      console.error('Error fetching events:', error.message)
-    } else {
-      events.value = data // Update your reactive 'events' data with fetched data
-    }
-  } catch (err) {
-    console.error('An unexpected error occurred:', err)
-  }
-})
-*/
 </script>
 
 <style scoped>
-/* You can add or modify styles here if needed. */
-/* The provided template uses inline styles, but for larger projects,
-   it's better to use <style scoped> or external CSS files. */
+/*
+  You can add or modify styles here if needed.
+  The provided template uses inline styles, which are generally not recommended
+  for larger projects. For better maintainability, consider moving styles
+  to this <style scoped> block or an external CSS file.
+*/
 </style>
