@@ -245,9 +245,10 @@ async function addParticipant() {
       body: JSON.stringify({
         attendeeName: newParticipantName.value,
         attendeeEmail: newParticipantEmail.value,
-        eventName: selectedEvent.value.name, // Assuming event_name is used as event_id in backend
+        eventName: selectedEvent.value.name,
         eventDate: selectedEvent.value.date,
         eventLocation: selectedEvent.value.location,
+        eventId: selectedEvent.value.id, // <--- ADD THIS LINE
       }),
     });
 
@@ -297,6 +298,7 @@ async function resendQrEmail(participant) {
         eventName: selectedEvent.value.name,
         eventDate: selectedEvent.value.date,
         eventLocation: selectedEvent.value.location,
+        eventId: selectedEvent.value.id, // <--- ADD THIS LINE
       }),
     });
 
@@ -313,6 +315,7 @@ async function resendQrEmail(participant) {
     showStatusPopup('Connection Error', `Failed to connect to backend or unexpected error during resend: ${e.message}`, 'error');
   }
 }
+
 
 
 // Function to show the delete confirmation modal
