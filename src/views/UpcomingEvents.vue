@@ -62,13 +62,8 @@
             placeholder="Participant Email"
             class="form-input"
           />
-          <input
-            type="text"
-            v-model="newParticipantStatus"
-            placeholder="Status (e.g., Registered)"
-            class="form-input"
-          />
-          <button @click="addParticipant" class="add-button">Add Participant</button>
+          <!-- Status will be 'Registered' by default as per backend logic for new registrations -->
+          <button @click="addParticipant" class="add-button">Add Participant & Send QR</button>
         </div>
 
         <!-- Participants Table -->
@@ -114,7 +109,7 @@
 <script setup type="module">
 import { ref, computed, onMounted, watch } from 'vue'
 import Sidebar from '../components/Sidebar.vue'
-import { supabase } from '../supabase.js'
+import { supabase } from '../supabase.js' // Assuming supabase client is initialized here
 
 // Reactive variables for events and participants
 const events = ref([])
@@ -125,7 +120,8 @@ const searchTerm = ref('')
 // Reactive variables for new participant form
 const newParticipantName = ref('')
 const newParticipantEmail = ref('')
-const newParticipantStatus = ref('Registered') // Default to 'Registered'
+// newParticipantStatus is no longer directly set by user, backend will set to 'Registered'
+// const newParticipantStatus = ref('Registered') // Default to 'Registered'
 
 // Reactive variables for messages and confirmation modal
 const message = ref('')
@@ -147,8 +143,8 @@ const filteredEvents = computed(() => {
 async function fetchEvents() {
   const { data: eventsData, error: eventsError } = await supabase
     .from('Events')
-    .select('id, name, date, location')
-    .gt('date', new Date().toISOString().slice(0, 10))
+    .select('id, name, date, location') // Ensure 'location' is selected
+    .gt('date', new Date().toISOString().slice(0, 10)) // Filter for upcoming events
     .order('date', { ascending: true });
 
   if (eventsError) {
@@ -201,10 +197,9 @@ async function selectEvent(event) {
   }
   // Clear any previous messages when a new event is selected
   clearMessage();
-  // Reset new participant form fields and set default status
+  // Reset new participant form fields
   newParticipantName.value = '';
   newParticipantEmail.value = '';
-  newParticipantStatus.value = 'Registered';
 }
 
 // Function to format date strings
@@ -213,41 +208,51 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString(undefined, options)
 }
 
-// Function to add a new participant to the selected event
+// Function to add a new participant and trigger QR code generation/email sending via backend
 async function addParticipant() {
   if (!selectedEvent.value) {
     showMessage('Please select an event first.', 'error');
     return;
   }
-  if (!newParticipantName.value || !newParticipantEmail.value || !newParticipantStatus.value) {
-    showMessage('All participant fields are required.', 'error');
+  if (!newParticipantName.value || !newParticipantEmail.value) {
+    showMessage('Participant Name and Email are required.', 'error');
     return;
   }
 
-  const { data, error } = await supabase
-    .from('Event_attendees')
-    .insert([
-      {
-        event_id: selectedEvent.value.id,
-        name: newParticipantName.value,
-        user_email: newParticipantEmail.value,
-        status: newParticipantStatus.value
-      }
-    ]);
+  // Call the Flask backend to handle participant registration, QR generation, and email sending
+  try {
+    const response = await fetch('http://localhost:5000/send_email_python', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        attendeeName: newParticipantName.value,
+        attendeeEmail: newParticipantEmail.value,
+        eventName: selectedEvent.value.name, // Assuming event_name is used as event_id in backend
+        eventDate: selectedEvent.value.date,
+        eventLocation: selectedEvent.value.location,
+      }),
+    });
 
-  if (error) {
-    console.error('Error adding participant:', error);
-    showMessage(`Error adding participant: ${error.message}`, 'error');
-  } else {
-    showMessage('Participant added successfully!', 'success');
-    // Clear form fields and reset status to default
-    newParticipantName.value = '';
-    newParticipantEmail.value = '';
-    newParticipantStatus.value = 'Registered'; // Reset to default
-    // Refresh participants list for the current event
-    participants.value = await fetchParticipants(selectedEvent.value.id) || [];
-    // Also refresh events to update participant count
-    await fetchEvents();
+    const result = await response.json();
+
+    if (response.ok) {
+      showMessage(`Participant added and QR email sent: ${result.message}`, 'success');
+      // Clear form fields
+      newParticipantName.value = '';
+      newParticipantEmail.value = '';
+      // Refresh participants list for the current event
+      participants.value = await fetchParticipants(selectedEvent.value.id) || [];
+      // Also refresh events to update participant count
+      await fetchEvents();
+    } else {
+      showMessage(`Error adding participant: ${result.message}`, 'error');
+      console.error('Backend error:', result.message);
+    }
+  } catch (e) {
+    console.error('Network or unexpected error calling backend:', e);
+    showMessage(`Failed to connect to backend or unexpected error: ${e.message}`, 'error');
   }
 }
 
